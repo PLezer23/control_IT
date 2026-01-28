@@ -1,0 +1,96 @@
+import json
+import time
+from datetime import datetime
+from time import sleep
+
+# Объявление глобальной переменной Имени и   индексом умножения
+well = {1: 1.00, 2: 77, 3: 0.8, 4: 0.7, 5: 7}
+name_currency = {1: "USD", 2: "RUB", 3: "EUR", 4: "GBR", 5: "CNY"}
+
+
+# 1.декоратор для замера времени
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Время выполнения расчета: {end_time - start_time:.5f} сек.")
+        return result
+
+    return wrapper
+
+
+# 2. Функция конвертации с анонимной функцией
+@timer
+def convert_currency(amount, value_index):
+    sleep(1)
+    rate = well.get(value_index)
+    calculate = lambda a, r: a * r  # Анонимная функция
+    return calculate(amount, rate)
+
+
+# 3. Модуль расчета налога
+def calculate_tax(amount):
+    return amount * 0.02
+
+
+# 4. Модуль проверки бонуса
+def apply_bonus(amount):
+    return amount + 10 if amount > 1000 else amount
+
+
+print("Выберите действие\n1. Перевести валюту\n2. История операций")
+choose = int(input())
+
+if choose == 1:
+    print("Сколько USD вы хотите конвертировать?")
+    money = int(input())
+
+    print("Выберите валюту В КОТОРУЮ конвертировать (цифру):")
+    print("1. USD\n2. RUB\n3. EUR\n4. GBR\n5. CNY")
+
+    Selected_currency = int(input())
+    name_index = name_currency[Selected_currency]
+
+    # Выполнение расчетов
+    result = convert_currency(money, Selected_currency)
+    tax = calculate_tax(result)
+    total_with_bonus = apply_bonus(result)
+
+    print(f"Результат: {result} {name_index}")
+    print(f"Комиссия: {tax} {name_index}")
+
+    # Запись данных
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data_operation = {
+        "amount_usd": money,
+        "currency_to": name_index,
+        "result": result,
+        "date": current_datetime
+    }
+
+
+    # Функция записи
+    def save_history(data):
+        try:
+            with open("history.json", "r", encoding="utf-8") as file:
+                history = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            history = []
+
+        history.append(data)
+        with open("history.json", "w", encoding="utf-8") as file:
+            json.dump(history, file, indent=4, ensure_ascii=False)
+        print("Операция сохранена в историю.")
+
+
+    save_history(data_operation)
+
+elif choose == 2:
+    try:
+        with open("history.json", "r", encoding="utf-8") as file:
+            history = json.load(file)
+            for op in history:
+                print(f"[{op['date']}] {op['amount_usd']} USD -> {op['result']} {op['currency_to']}")
+    except FileNotFoundError:
+        print("История пуста.")
